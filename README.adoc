@@ -42,3 +42,5 @@ $ swap-xfce-workspace next
 ### Author
 
 Duncan Lock <duncan.lock@gmail.com>
+
+The rename desktop code came from https://github.com/ngeiswei/rename-xfce-workspace
