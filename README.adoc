@@ -1,6 +1,6 @@
 # swap-xfce-workspaces
 
-Swap/move the current workspace in Xfce, with either the next, previous or a specified target workspace.
+Swap/move the current Xfce workspace, with either the next, previous or a specified target workspace.
 
 ## Requirements
 
@@ -28,11 +28,11 @@ You can swap the current workspace with any other by passing in the target works
 $ swap-xfce-workspaces <target workspace id>
 ```
 
-NOTE: This expects the default XFCE workspace numbers, which start from 1.
+NOTE: This expects XFCE workspace numbers, which start from 1.
 
 ### Swap with previous or next workspace
 
-This will move the current workspace left or right, by swapping it with the previous or next workspace.
+This will move the current workspace left or right, by swapping it with the previous or next workspace:
 
 ```shell
 $ swap-xfce-workspace prev

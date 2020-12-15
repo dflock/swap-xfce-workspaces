@@ -4,27 +4,64 @@
 set -o nounset   # Using an undefined variable is fatal
 set -o errexit   # A sub-process/shell returning non-zero is fatal
 # set -o pipefail  # If a pipeline step fails, the pipelines RC is the RC of the failed step
-#set -o xtrace    # Output a complete trace of all bash actions; uncomment for debugging
+# set -o xtrace    # Output a complete trace of all bash actions; uncomment for debugging
 
-#IFS=$'\n\t'  # Only split strings on newlines & tabs, not spaces.
+# IFS=$'\n\t'  # Only split strings on newlines & tabs, not spaces.
 
-# 
-# Simple script to swap the current workspace, for Xfce4.
-#
-# Takes one parameter, the workspace to swap with the active one. 
-#
+usage() {
+  cat <<EOF
+
+Swap or move the current Xfce workspace.
+
+USAGE
+  $(basename "${BASH_SOURCE[0]}") <workspace num>|prev|next
+
+ARGUMENTS
+  <workspace num>  the target workspace id. Expects XFCE workspace numbers, starting from 1.
+  prev             swap current workspace with the previous one
+  next             swap current workspace with the next one
+  help             show this help
+
+OPTIONS
+  -h, --help       show this help
+
+EXAMPLES
+  # Swap the current workspace with any other by passing in the target workspace id:
+  # NOTE: This expects XFCE workspace numbers, which start from 1.
+  $ swap-xfce-workspaces <target workspace id>
+
+  # Move the current workspace left or right, by swapping it with the previous or next workspace.
+  $ swap-xfce-workspace prev
+  $ swap-xfce-workspace next
+EOF
+  exit
+}
+
+msg() {
+  echo >&2 -e "${1-}"
+}
+
+die() {
+  local msg=$1
+  local code=${2-1} # default exit status 1
+  msg "$msg"
+  exit "$code"
+}
 
 if ! command -v wmctrl &> /dev/null
 then
-    echo "wmctrl could not be found"
-    echo "${BASH_SOURCE[0]} requires wmctrl (tested with 1.07)"
-    echo "See: https://www.freedesktop.org/wiki/Software/wmctrl/"
-    exit 127
+  die "wmctrl could not be found\n\
+    ${BASH_SOURCE[0]} requires wmctrl (tested with 1.07)\n\
+    See: https://www.freedesktop.org/wiki/Software/wmctrl/" 127
 fi
 
 if [[ $# -ne 1 ]]; then
-  echo "Missing parameter: Target Workspace - the workspace ID to swap with the active one."
-  exit 2
+  msg "Missing parameter: Target Workspace - the workspace ID to swap with the active one."
+  usage
+fi
+
+if [[ $1 == '-h' || $1 == '--help' || $1 == 'help' ]]; then
+  usage
 fi
 
 # Get the names of all the workspaces
@@ -56,14 +93,10 @@ elif [[ $1 =~ next ]]; then
   fi
 else
   if [[ $1 == 0 ]]; then
-    echo "Target workspace was: $1"
-    echo "Target workspace must be from 1 to $max_ws_idx"
-    exit 2
+    die "Target workspace was: $1. Target workspace must be from 1 to $max_ws_idx" 2
   fi
   if [[ $1 > $max_ws_idx ]]; then
-    echo "Target workspace was: $1"
-    echo "Target workspace must be from 1 to $max_ws_idx"
-    exit 2
+    die "Target workspace was: $1. Target workspace must be from 1 to $max_ws_idx" 2
   fi
   # Users desktops are numbered from 1, but wmcrtl numbers from zero, so minus one.
   target_ws_idx=$(($1-1))
@@ -71,34 +104,33 @@ fi
 # Get target workspace details from wmctrl
 target_ws_name=${ws_names[$target_ws_idx]}
 
-echo "Current Workspace: $current_ws_idx: $current_ws_name"
-echo "Target Workspace: $target_ws_idx: $target_ws_name"
+msg "Current Workspace: $current_ws_idx: $current_ws_name"
+msg "Target Workspace: $target_ws_idx: $target_ws_name"
 
 # Bail if $current_ws_idx == the workspace to swap with
 if [[ $current_ws_idx -eq $target_ws_idx ]]; then
-  echo "Cannot swap workspace with itself."
-  exit 2
+  die "Cannot swap workspace with itself." 2
 fi
 
 # Get list of window ids on current workspace
 current_windows=$(wmctrl -lx | awk -v cws="$current_ws_idx" '($2 == cws) {print $1}')
-echo -e "Windows on current workspace: \n$current_windows"
+msg "Windows on current workspace: \n$current_windows"
 
 # Get list of window ids on target workspace
 target_windows=$(wmctrl -lx | awk -v tws="$target_ws_idx" '($2 == tws) {print $1}')
-echo -e "Windows on target workspace: \n$target_windows"
+msg "Windows on target workspace: \n$target_windows"
 
 # Move all windows on current workspace to target
 for window in ${current_windows//\\n/ }
 do
-  echo "Moving window: $window from workspace $current_ws_idx to $target_ws_idx"
+  msg "Moving window: $window from workspace $current_ws_idx to $target_ws_idx"
   # wmctrl -i "$window" -t "$target_ws_idx"
 done
 
 # Move all windows from target to current
 for window in ${target_windows//\\n/ }
 do
-  echo "Moving window: $window from workspace $target_ws_idx to $current_ws_idx"
+  msg "Moving window: $window from workspace $target_ws_idx to $current_ws_idx"
   # wmctrl -i "$window" -t "$current_ws_idx"
 done
 
@@ -114,5 +146,8 @@ for i in ${!ws_names[@]}; do
     fi
 done
 
-echo "$xfconf_cmd"
+msg "$xfconf_cmd"
 # eval $xfconf_cmd
+
+# Switch to the target desktop
+wmctrl -s $target_ws_idx
