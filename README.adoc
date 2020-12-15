@@ -1,0 +1,44 @@
+# swap-xfce-workspaces
+
+Swap/move the current workspace in Xfce, with either the next, previous or a specified target workspace.
+
+## Requirements
+
+You need the `wmctrl` installed. See: https://www.freedesktop.org/wiki/Software/wmctrl/
+
+For Xubuntu, you can do 
+
+```shell
+$ sudo apt install wmctrl
+```
+
+## Installation
+
+```shell
+$ sudo cp swap-xfce-workspaces.sh /usr/bin/swap-xfce-workspaces
+```
+
+## Usage
+
+### Swap with specific workspace, by ID
+
+You can swap the current workspace with any other by passing in the target workspace id:
+
+```shell
+$ swap-xfce-workspaces <target workspace id>
+```
+
+NOTE: This expects the default XFCE workspace numbers, which start from 1.
+
+### Swap with previous or next workspace
+
+This will move the current workspace left or right, by swapping it with the previous or next workspace.
+
+```shell
+$ swap-xfce-workspace prev
+$ swap-xfce-workspace next
+```
+
+### Author
+
+Duncan Lock <duncan.lock@gmail.com>
