@@ -124,14 +124,14 @@ msg "Windows on target workspace: \n$target_windows"
 for window in ${current_windows//\\n/ }
 do
   msg "Moving window: $window from workspace $current_ws_idx to $target_ws_idx"
-  # wmctrl -i "$window" -t "$target_ws_idx"
+  wmctrl -ir "$window" -t "$target_ws_idx"
 done
 
 # Move all windows from target to current
 for window in ${target_windows//\\n/ }
 do
   msg "Moving window: $window from workspace $target_ws_idx to $current_ws_idx"
-  # wmctrl -i "$window" -t "$current_ws_idx"
+  wmctrl -ir "$window" -t "$current_ws_idx"
 done
 
 # Swap workspace names
@@ -146,8 +146,8 @@ for i in ${!ws_names[@]}; do
     fi
 done
 
-msg "$xfconf_cmd"
-# eval $xfconf_cmd
+msg "Renaming workspaces: $xfconf_cmd"
+eval $xfconf_cmd
 
 # Switch to the target desktop
 wmctrl -s $target_ws_idx
