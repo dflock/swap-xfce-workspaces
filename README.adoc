@@ -4,9 +4,9 @@ Swap/move the current workspace in Xfce, with either the next, previous or a spe
 
 ## Requirements
 
-You need the `wmctrl` installed. See: https://www.freedesktop.org/wiki/Software/wmctrl/
+You need `wmctrl` installed. See: https://www.freedesktop.org/wiki/Software/wmctrl/
 
-For Xubuntu, you can do 
+For Xubuntu, you can do:
 
 ```shell
 $ sudo apt install wmctrl
