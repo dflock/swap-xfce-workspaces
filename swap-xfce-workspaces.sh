@@ -28,11 +28,11 @@ OPTIONS
 EXAMPLES
   # Swap the current workspace with any other by passing in the target workspace id:
   # NOTE: This expects XFCE workspace numbers, which start from 1.
-  $ swap-xfce-workspaces <target workspace id>
+  $ $(basename "${BASH_SOURCE[0]}") <target workspace id>
 
   # Move the current workspace left or right, by swapping it with the previous or next workspace.
-  $ swap-xfce-workspace prev
-  $ swap-xfce-workspace next
+  $ $(basename "${BASH_SOURCE[0]}") prev
+  $ $(basename "${BASH_SOURCE[0]}") next
 EOF
   exit
 }
