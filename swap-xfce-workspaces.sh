@@ -52,6 +52,7 @@ setup_colors() {
     readonly grn=''
     readonly ylw=''
     readonly wht=''
+    readonly gry=''
     readonly bld=''
     readonly off=''
   fi
