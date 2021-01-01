@@ -13,28 +13,48 @@ usage() {
 
 Swap or move the current Xfce workspace.
 
-USAGE
+${bld}USAGE${off}
   $(basename "${BASH_SOURCE[0]}") <workspace num>|prev|next
 
-ARGUMENTS
+${bld}ARGUMENTS${off}
   <workspace num>  the target workspace id. Expects XFCE workspace numbers, starting from 1.
   prev             swap current workspace with the previous one
   next             swap current workspace with the next one
   help             show this help
 
-OPTIONS
+${bld}OPTIONS${off}
   -h, --help       show this help
 
-EXAMPLES
-  # Swap the current workspace with any other by passing in the target workspace id:
-  # NOTE: This expects XFCE workspace numbers, which start from 1.
+${bld}EXAMPLES${off}
+  ${gry}# Swap the current workspace with any other by passing in the target workspace id:
+  # NOTE: This expects XFCE workspace numbers, which start from 1.${off}
   $ $(basename "${BASH_SOURCE[0]}") <target workspace id>
 
-  # Move the current workspace left or right, by swapping it with the previous or next workspace.
+  ${gry}# Move the current workspace left or right, by swapping it with the previous or next workspace.${off}
   $ $(basename "${BASH_SOURCE[0]}") prev
   $ $(basename "${BASH_SOURCE[0]}") next
 EOF
   exit
+}
+
+setup_colors() {
+  if [[ -t 2 ]] && [[ -z "${NO_COLOR-}" ]] && [[ "${TERM-}" != "dumb" ]]; then
+    # Control sequences for fancy colours
+    readonly red="$(tput setaf 1 2> /dev/null || true)"
+    readonly grn="$(tput setaf 2 2> /dev/null || true)"
+    readonly ylw="$(tput setaf 3 2> /dev/null || true)"
+    readonly wht="$(tput setaf 7 2> /dev/null || true)"
+    readonly gry="$(tput setaf 8 2> /dev/null || true)"
+    readonly bld="$(tput bold 2> /dev/null || true)"
+    readonly off="$(tput sgr0 2> /dev/null || true)"
+  else
+    readonly red=''
+    readonly grn=''
+    readonly ylw=''
+    readonly wht=''
+    readonly bld=''
+    readonly off=''
+  fi
 }
 
 msg() {
@@ -47,6 +67,8 @@ die() {
   msg "$msg"
   exit "$code"
 }
+
+setup_colors
 
 if ! command -v wmctrl &> /dev/null
 then
