@@ -44,7 +44,7 @@ setup_colors() {
     readonly grn="$(tput setaf 2 2> /dev/null || true)"
     readonly ylw="$(tput setaf 3 2> /dev/null || true)"
     readonly wht="$(tput setaf 7 2> /dev/null || true)"
-    readonly gry="$(tput setaf 8 2> /dev/null || true)"
+    readonly gry="$(tput setaf 240 2> /dev/null || true)"
     readonly bld="$(tput bold 2> /dev/null || true)"
     readonly off="$(tput sgr0 2> /dev/null || true)"
   else
