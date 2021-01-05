@@ -8,13 +8,35 @@ set -o errexit   # A sub-process/shell returning non-zero is fatal
 
 # IFS=$'\n\t'  # Only split strings on newlines & tabs, not spaces.
 
+function init() {
+  readonly script_path="${BASH_SOURCE[0]:-$0}"
+  readonly script_dir="$(dirname "$(readlink -f "$script_path")")"
+  readonly script_name="$(basename "$script_path")"
+  
+  # Get the names of all the workspaces
+  ws_names=()
+  while read name; do
+    ws_names+=("$name")
+  done < <(xfconf-query -c xfwm4 -p /general/workspace_names | tail -n +3)
+
+  # Get current workspace details from wmctrl
+  current_ws_idx=$(wmctrl -d | grep '*' | cut -d " " -f1)
+  current_ws_name=${ws_names[$current_ws_idx]}
+  max_ws_idx=$(wmctrl -d | wc -l)
+
+  verbose=false
+
+  setup_colors
+  parse_params "$@"
+}
+
 usage() {
   cat <<EOF
 
 Swap or move the current Xfce workspace.
 
 ${bld}USAGE${off}
-  $(basename "${BASH_SOURCE[0]}") <workspace num>|prev|next
+  $script_name <workspace num>|prev|next
 
 ${bld}ARGUMENTS${off}
   <workspace num>  the target workspace id. Expects XFCE workspace numbers, starting from 1.
@@ -24,15 +46,16 @@ ${bld}ARGUMENTS${off}
 
 ${bld}OPTIONS${off}
   -h, --help       show this help
+  -v, --verbose    show verbose/debug output
 
 ${bld}EXAMPLES${off}
   ${gry}# Swap the current workspace with any other by passing in the target workspace id:
   # NOTE: This expects XFCE workspace numbers, which start from 1.${off}
-  $ $(basename "${BASH_SOURCE[0]}") <target workspace id>
+  $ $script_name <target workspace id>
 
   ${gry}# Move the current workspace left or right, by swapping it with the previous or next workspace.${off}
-  $ $(basename "${BASH_SOURCE[0]}") prev
-  $ $(basename "${BASH_SOURCE[0]}") next
+  $ $script_name prev
+  $ $script_name next
 EOF
   exit
 }
@@ -62,6 +85,12 @@ msg() {
   echo >&2 -e "${1-}"
 }
 
+vmsg() {
+  if [ "$verbose" = "true" ]; then
+    msg "$@"
+  fi
+}
+
 die() {
   local msg=$1
   local code=${2-1} # default exit status 1
@@ -69,12 +98,55 @@ die() {
   exit "$code"
 }
 
-setup_colors
+function parse_params() {
+  local param
+  while [[ $# -gt 0 ]]; do
+    param="$1"
+    shift
+    case $param in
+      -h | --help | help)
+        usage
+        ;;
+      -v | --verbose)
+        verbose=true
+        ;;
+      *)
+        # Figure out target_ws_idx
+        if [[ $param =~ prev ]]; then
+          # Swapping with previous workspace, wrap if at end.
+          if [[ $current_ws_idx == 0 ]]; then
+            target_ws_idx=$max_ws_idx
+          else
+            target_ws_idx=$(($current_ws_idx - 1))
+          fi
+        elif [[ $param =~ next ]]; then
+          # Swapping with next workspace, wrap if at end.
+          if [[ $current_ws_idx == $max_ws_idx ]]; then
+            target_ws_idx=0
+          else
+            target_ws_idx=$(($current_ws_idx + 1))
+          fi
+        else
+          if (( param == 0 )); then
+            die "Target workspace was: 0. Target workspace must be from 1 to $max_ws_idx" 2
+          fi
+          if (( param > max_ws_idx )); then
+            die "Target workspace was: $param. Target workspace must be from 1 to $max_ws_idx" 2
+          fi
+          # Users desktops are numbered from 1, but wmcrtl numbers from zero, so minus one.
+          target_ws_idx=$(($param-1))
+        fi
+        ;;
+    esac
+  done
+}
+
+init "$@"
 
 if ! command -v wmctrl &> /dev/null
 then
   die "wmctrl could not be found\n\
-    ${BASH_SOURCE[0]} requires wmctrl (tested with 1.07)\n\
+    $script_name requires wmctrl (tested with 1.07)\n\
     See: https://www.freedesktop.org/wiki/Software/wmctrl/" 127
 fi
 
@@ -83,47 +155,6 @@ if [[ $# -ne 1 ]]; then
   usage
 fi
 
-if [[ $1 == '-h' || $1 == '--help' || $1 == 'help' ]]; then
-  usage
-fi
-
-# Get the names of all the workspaces
-ws_names=()
-while read name; do
-  ws_names+=("$name")
-done < <(xfconf-query -c xfwm4 -p /general/workspace_names | tail -n +3)
-
-# Get current workspace details from wmctrl
-current_ws_idx=$(wmctrl -d | grep '*' | cut -d " " -f1)
-current_ws_name=${ws_names[$current_ws_idx]}
-
-max_ws_idx=$(wmctrl -d | wc -l)
-
-# Figure out target_ws_idx
-if [[ $1 =~ prev ]]; then
-  # Swapping with previous workspace, wrap if at end.
-  if [[ $current_ws_idx == 0 ]]; then
-    target_ws_idx=$max_ws_idx
-  else
-    target_ws_idx=$(($current_ws_idx - 1))
-  fi
-elif [[ $1 =~ next ]]; then
-  # Swapping with next workspace, wrap if at end.
-  if [[ $current_ws_idx == $max_ws_idx ]]; then
-    target_ws_idx=0
-  else
-    target_ws_idx=$(($current_ws_idx + 1))
-  fi
-else
-  if [[ $1 == 0 ]]; then
-    die "Target workspace was: $1. Target workspace must be from 1 to $max_ws_idx" 2
-  fi
-  if [[ $1 > $max_ws_idx ]]; then
-    die "Target workspace was: $1. Target workspace must be from 1 to $max_ws_idx" 2
-  fi
-  # Users desktops are numbered from 1, but wmcrtl numbers from zero, so minus one.
-  target_ws_idx=$(($1-1))
-fi
 # Get target workspace details from wmctrl
 target_ws_name=${ws_names[$target_ws_idx]}
 
@@ -137,23 +168,23 @@ fi
 
 # Get list of window ids on current workspace
 current_windows=$(wmctrl -lx | awk -v cws="$current_ws_idx" '($2 == cws) {print $1}')
-msg "Windows on current workspace: \n$current_windows"
+vmsg "Windows on current workspace: \n$current_windows"
 
 # Get list of window ids on target workspace
 target_windows=$(wmctrl -lx | awk -v tws="$target_ws_idx" '($2 == tws) {print $1}')
-msg "Windows on target workspace: \n$target_windows"
+vmsg "Windows on target workspace: \n$target_windows"
 
 # Move all windows on current workspace to target
 for window in ${current_windows//\\n/ }
 do
-  msg "Moving window: $window from workspace $current_ws_idx to $target_ws_idx"
+  vmsg "Moving window: $window from workspace $current_ws_idx to $target_ws_idx"
   wmctrl -ir "$window" -t "$target_ws_idx"
 done
 
 # Move all windows from target to current
 for window in ${target_windows//\\n/ }
 do
-  msg "Moving window: $window from workspace $target_ws_idx to $current_ws_idx"
+  vmsg "Moving window: $window from workspace $target_ws_idx to $current_ws_idx"
   wmctrl -ir "$window" -t "$current_ws_idx"
 done
 
@@ -169,7 +200,7 @@ for i in ${!ws_names[@]}; do
     fi
 done
 
-msg "Renaming workspaces: $xfconf_cmd"
+vmsg "Renaming workspaces: $xfconf_cmd"
 eval $xfconf_cmd
 
 # Switch to the target desktop
