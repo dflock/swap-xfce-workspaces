@@ -17,7 +17,7 @@ function init() {
   ws_names=()
   while read -r name; do
     ws_names+=("$name")
-  done < <(xfconf-query -c xfwm4 -p /general/workspace_names | tail -n +3)
+  done < <(wmctrl -d | awk '{$1=$2=$3=$4=$5=$6=$7=$8=$9=""; print $0}')
 
   # Get current workspace details from wmctrl
   current_ws_idx=$(wmctrl -d | grep '*' | cut -d " " -f1)
