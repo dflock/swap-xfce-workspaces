@@ -15,7 +15,7 @@ function init() {
   
   # Get the names of all the workspaces
   ws_names=()
-  while read name; do
+  while read -r name; do
     ws_names+=("$name")
   done < <(xfconf-query -c xfwm4 -p /general/workspace_names | tail -n +3)
 
@@ -63,18 +63,10 @@ EOF
 setup_colors() {
   if [[ -t 2 ]] && [[ -z "${NO_COLOR-}" ]] && [[ "${TERM-}" != "dumb" ]]; then
     # Control sequences for fancy colours
-    readonly red="$(tput setaf 1 2> /dev/null || true)"
-    readonly grn="$(tput setaf 2 2> /dev/null || true)"
-    readonly ylw="$(tput setaf 3 2> /dev/null || true)"
-    readonly wht="$(tput setaf 7 2> /dev/null || true)"
     readonly gry="$(tput setaf 240 2> /dev/null || true)"
     readonly bld="$(tput bold 2> /dev/null || true)"
     readonly off="$(tput sgr0 2> /dev/null || true)"
   else
-    readonly red=''
-    readonly grn=''
-    readonly ylw=''
-    readonly wht=''
     readonly gry=''
     readonly bld=''
     readonly off=''
@@ -117,14 +109,14 @@ function parse_params() {
           if [[ $current_ws_idx == 0 ]]; then
             target_ws_idx=$max_ws_idx
           else
-            target_ws_idx=$(($current_ws_idx - 1))
+            target_ws_idx=$((current_ws_idx - 1))
           fi
         elif [[ $param =~ next ]]; then
           # Swapping with next workspace, wrap if at end.
-          if [[ $current_ws_idx == $max_ws_idx ]]; then
+          if [[ $current_ws_idx == "$max_ws_idx" ]]; then
             target_ws_idx=0
           else
-            target_ws_idx=$(($current_ws_idx + 1))
+            target_ws_idx=$((current_ws_idx + 1))
           fi
         else
           if (( param == 0 )); then
@@ -134,7 +126,7 @@ function parse_params() {
             die "Target workspace was: $param. Target workspace must be from 1 to $max_ws_idx" 2
           fi
           # Users desktops are numbered from 1, but wmcrtl numbers from zero, so minus one.
-          target_ws_idx=$(($param-1))
+          target_ws_idx=$((param-1))
         fi
         ;;
     esac
@@ -190,10 +182,10 @@ done
 
 # Swap workspace names
 xfconf_cmd="xfconf-query -c xfwm4 -p /general/workspace_names"
-for i in ${!ws_names[@]}; do
-    if [[ $i == $current_ws_idx ]]; then
+for i in "${!ws_names[@]}"; do
+    if [[ $i == "$current_ws_idx" ]]; then
       xfconf_cmd+=" -s \"$target_ws_name\""
-    elif [[ $i == $target_ws_idx ]]; then
+    elif [[ $i == "$target_ws_idx" ]]; then
       xfconf_cmd+=" -s \"$current_ws_name\""
     else
       xfconf_cmd+=" -s \"${ws_names[$i]}\""
@@ -201,7 +193,7 @@ for i in ${!ws_names[@]}; do
 done
 
 vmsg "Renaming workspaces: $xfconf_cmd"
-eval $xfconf_cmd
+eval "$xfconf_cmd"
 
 # Switch to the target desktop
 wmctrl -s $target_ws_idx
