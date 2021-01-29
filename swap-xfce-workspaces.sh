@@ -181,6 +181,8 @@ do
 done
 
 # Swap workspace names
+# TODO: I think this is the only xfce/xfwm specific code in here
+# and you could probably do this with wmctrl insetad, making it more general.
 xfconf_cmd="xfconf-query -c xfwm4 -p /general/workspace_names"
 for i in "${!ws_names[@]}"; do
     if [[ $i == "$current_ws_idx" ]]; then
